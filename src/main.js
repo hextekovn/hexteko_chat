@@ -4,6 +4,7 @@ const API = "https://keyauth-udk4.onrender.com";
 
 let USER_KEY = "";
 let USER_NAME = "";
+let lastMessageId = null;
 
 document.querySelector("#app").innerHTML = `
 
@@ -107,6 +108,71 @@ const imgBtn = document.getElementById("imgBtn");
 const imgInput = document.getElementById("imgInput");
 const clearBtn = document.getElementById("clearBtn");
 
+// Hàm thêm tin nhắn mới với hỗ trợ nhận diện hình ảnh
+function addMessage(username, message, mine = false) {
+    const msg = document.createElement("div");
+    msg.className = `msg ${mine ? "mine" : ""}`;
+
+    const isImage =
+        message.startsWith("/uploads/") ||
+        /\.(jpg|jpeg|png|gif|webp)$/i.test(message);
+
+    const name = document.createElement("div");
+    name.className = "msg-name";
+    name.textContent = username;
+
+    if (isImage) {
+        const imageUrl = message.startsWith("http")
+            ? message
+            : window.location.origin + message;
+
+        const text = document.createElement("div");
+        text.className = "msg-text";
+        
+        const img = document.createElement("img");
+        img.src = imageUrl;
+        img.className = "chat-image";
+        img.style.maxWidth = "200px";
+        img.style.borderRadius = "8px";
+        img.style.cursor = "pointer";
+        img.onclick = () => window.open(imageUrl);
+        
+        text.appendChild(img);
+        msg.appendChild(name);
+        msg.appendChild(text);
+    } else {
+        const text = document.createElement("div");
+        text.className = "msg-text";
+        text.textContent = message;
+        
+        msg.appendChild(name);
+        msg.appendChild(text);
+    }
+
+    messages.appendChild(msg);
+}
+
+// Hàm thông báo tin nhắn mới
+function notifyNewMessage(username, message) {
+    if (Notification.permission === "granted") {
+        new Notification("Bạn có tin nhắn mới", {
+            body: `${username}: ${
+                message.startsWith("/uploads/") || /\.(jpg|jpeg|png|gif|webp)$/i.test(message)
+                    ? "📷 Đã gửi một ảnh"
+                    : message
+            }`,
+            icon: "/logo.png"
+        });
+    }
+}
+
+// Yêu cầu quyền thông báo khi trang load
+async function requestNotificationPermission() {
+    if (Notification.permission === "default") {
+        await Notification.requestPermission();
+    }
+}
+
 async function login() {
   const key = keyInput.value.trim();
 
@@ -140,6 +206,9 @@ async function login() {
     loginPage.style.display = "none";
     chatPage.style.display = "flex";
 
+    // Yêu cầu quyền thông báo
+    await requestNotificationPermission();
+
     await loadMessages();
     scrollBottom();
   } catch (err) {
@@ -152,26 +221,6 @@ function scrollBottom() {
   messages.scrollTop = messages.scrollHeight;
 }
 
-function createMessage(msg) {
-  const div = document.createElement("div");
-  const mine = msg.sender === USER_NAME;
-
-  div.className = mine ? "msg mine" : "msg";
-
-  const name = document.createElement("div");
-  name.className = "msg-name";
-  name.textContent = msg.sender;
-
-  const text = document.createElement("div");
-  text.className = "msg-text";
-  text.textContent = msg.message;
-
-  div.appendChild(name);
-  div.appendChild(text);
-
-  messages.appendChild(div);
-}
-
 async function loadMessages() {
   try {
     const res = await fetch(
@@ -179,12 +228,36 @@ async function loadMessages() {
     );
 
     const data = await res.json();
-    messages.innerHTML = "";
-
+    
     if (!data.success) return;
 
+    // Kiểm tra tin nhắn mới
+    if (data.data && data.data.length > 0) {
+      const lastMsg = data.data[data.data.length - 1];
+      const newMessageId = lastMsg.id || lastMsg.timestamp || JSON.stringify(lastMsg);
+      
+      if (lastMessageId !== null && lastMessageId !== newMessageId) {
+        // Có tin nhắn mới
+        const newMessages = data.data.filter(msg => {
+          const msgId = msg.id || msg.timestamp || JSON.stringify(msg);
+          return msgId !== lastMessageId;
+        });
+        
+        newMessages.forEach(msg => {
+          if (msg.sender !== USER_NAME && document.hidden) {
+            notifyNewMessage(msg.sender, msg.message);
+          }
+        });
+      }
+      
+      lastMessageId = newMessageId;
+    }
+
+    messages.innerHTML = "";
+
     data.data.forEach(msg => {
-      createMessage(msg);
+      const mine = msg.sender === USER_NAME;
+      addMessage(msg.sender, msg.message, mine);
     });
 
     scrollBottom();
@@ -238,17 +311,21 @@ imgInput.onchange = async () => {
   const form = new FormData();
   form.append("image", file);
 
-  const res = await fetch(
-    `${API}/upload?key=${USER_KEY}`,
-    {
-      method: "POST",
-      body: form
-    }
-  );
+  try {
+    const res = await fetch(
+      `${API}/upload?key=${USER_KEY}`,
+      {
+        method: "POST",
+        body: form
+      }
+    );
 
-  const data = await res.json();
-  console.log(data);
-  loadMessages();
+    const data = await res.json();
+    console.log(data);
+    await loadMessages();
+  } catch (err) {
+    console.error("Upload failed:", err);
+  }
 };
 
 // Xoá toàn bộ tin nhắn
@@ -271,6 +348,13 @@ logoutBtn.addEventListener("click", logout);
 msgInput.addEventListener("keydown", e => {
   if (e.key === "Enter") {
     sendMessage();
+  }
+});
+
+// Thêm event listener cho việc tab ẩn/hiện
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && USER_KEY) {
+    loadMessages();
   }
 });
 
