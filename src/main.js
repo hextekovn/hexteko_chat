@@ -53,6 +53,7 @@ document.querySelector("#app").innerHTML = `
     </div>
 
     <div class="topbar-right">
+      <input type="color" id="bgPicker" title="Đổi màu nền chat" style="width: 30px; height: 30px; border: none; border-radius: 50%; cursor: pointer; margin-right: 10px;">
       <button id="clearBtn" class="logout-btn">
         🗑
       </button>
@@ -107,6 +108,7 @@ const logoutBtn = document.getElementById("logoutBtn");
 const imgBtn = document.getElementById("imgBtn");
 const imgInput = document.getElementById("imgInput");
 const clearBtn = document.getElementById("clearBtn");
+const bgPicker = document.getElementById("bgPicker");
 
 // Hàm thêm tin nhắn mới với hỗ trợ nhận diện hình ảnh
 function addMessage(username, message, mine = false) {
@@ -173,6 +175,23 @@ async function requestNotificationPermission() {
     }
 }
 
+// Đổi màu nền chat
+function setChatBackground(color) {
+    messages.style.background = color;
+    localStorage.setItem("chat_bg", color);
+}
+
+// Khôi phục màu nền chat
+function loadChatBackground() {
+    const savedColor = localStorage.getItem("chat_bg");
+    if (savedColor) {
+        messages.style.background = savedColor;
+        if (bgPicker) {
+            bgPicker.value = savedColor;
+        }
+    }
+}
+
 async function login() {
   const key = keyInput.value.trim();
 
@@ -205,6 +224,9 @@ async function login() {
 
     loginPage.style.display = "none";
     chatPage.style.display = "flex";
+
+    // Khôi phục màu nền chat
+    loadChatBackground();
 
     // Yêu cầu quyền thông báo
     await requestNotificationPermission();
@@ -341,6 +363,11 @@ clearBtn.onclick = async () => {
   loadMessages();
 };
 
+// Event listener cho đổi màu nền
+bgPicker.addEventListener("input", (e) => {
+    setChatBackground(e.target.value);
+});
+
 loginBtn.addEventListener("click", login);
 sendBtn.addEventListener("click", sendMessage);
 logoutBtn.addEventListener("click", logout);
@@ -359,6 +386,9 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("load", async () => {
+  // Khôi phục màu nền trước khi login
+  loadChatBackground();
+  
   const savedKey = localStorage.getItem("chat_key");
 
   if (!savedKey) return;
