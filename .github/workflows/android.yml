@@ -31,7 +31,7 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Build Debug APK
+      - name: Build APK
         run: |
           cd android
           chmod +x gradlew
