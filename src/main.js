@@ -11,7 +11,7 @@ document.querySelector("#app").innerHTML = `
 <div id="loginPage" class="login-page">
   <div class="login-card">
     <h1 class="logo">
-      HEXTEKO CHAT
+      Tkhoi♡Mtue
     </h1>
 
     <input
