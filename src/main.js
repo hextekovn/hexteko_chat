@@ -1,6 +1,6 @@
 import "./style.css";
 
-const API = "https://keyauth-udk4.onrender.com";
+const API_URL = "https://keyauth-udk4.onrender.com";
 
 let USER_KEY = "";
 let USER_NAME = "";
@@ -115,18 +115,12 @@ function addMessage(username, message, mine = false) {
     const msg = document.createElement("div");
     msg.className = `msg ${mine ? "mine" : ""}`;
 
-    const isImage =
-        message.startsWith("/uploads/") ||
-        /\.(jpg|jpeg|png|gif|webp)$/i.test(message);
-
     const name = document.createElement("div");
     name.className = "msg-name";
     name.textContent = username;
 
-    if (isImage) {
-        const imageUrl = message.startsWith("http")
-            ? message
-            : window.location.origin + message;
+    if (message.startsWith("/uploads/")) {
+        const imageUrl = API_URL + message;
 
         const text = document.createElement("div");
         text.className = "msg-text";
@@ -159,7 +153,7 @@ function notifyNewMessage(username, message) {
     if (Notification.permission === "granted") {
         new Notification("Bạn có tin nhắn mới", {
             body: `${username}: ${
-                message.startsWith("/uploads/") || /\.(jpg|jpeg|png|gif|webp)$/i.test(message)
+                message.startsWith("/uploads/")
                     ? "📷 Đã gửi một ảnh"
                     : message
             }`,
@@ -204,7 +198,7 @@ async function login() {
 
   try {
     const res = await fetch(
-      `${API}/profile?key=${encodeURIComponent(key)}`
+      `${API_URL}/profile?key=${encodeURIComponent(key)}`
     );
 
     const data = await res.json();
@@ -246,7 +240,7 @@ function scrollBottom() {
 async function loadMessages() {
   try {
     const res = await fetch(
-      `${API}/?action=get_messages&key=${encodeURIComponent(USER_KEY)}`
+      `${API_URL}/?action=get_messages&key=${encodeURIComponent(USER_KEY)}`
     );
 
     const data = await res.json();
@@ -300,7 +294,7 @@ async function sendMessage() {
 
   try {
     const res = await fetch(
-      `${API}/?action=send_message&key=${encodeURIComponent(USER_KEY)}&message=${encodeURIComponent(text)}`
+      `${API_URL}/?action=send_message&key=${encodeURIComponent(USER_KEY)}&message=${encodeURIComponent(text)}`
     );
 
     const data = await res.json();
@@ -335,7 +329,7 @@ imgInput.onchange = async () => {
 
   try {
     const res = await fetch(
-      `${API}/upload?key=${USER_KEY}`,
+      `${API_URL}/upload?key=${USER_KEY}`,
       {
         method: "POST",
         body: form
@@ -357,7 +351,7 @@ clearBtn.onclick = async () => {
   if (!admin) return;
 
   await fetch(
-    `${API}/?action=clear_messages&keyadmin=${admin}`
+    `${API_URL}/?action=clear_messages&keyadmin=${admin}`
   );
 
   loadMessages();
