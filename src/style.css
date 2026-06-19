@@ -383,3 +383,12 @@ height:48px;
 }
 
 }
+.chat-image {
+    max-width: 250px;
+    max-height: 250px;
+    border-radius: 12px;
+    display: block;
+    margin-top: 5px;
+    object-fit: cover;
+    box-shadow: 0 0 15px rgba(140, 0, 255, .4);
+}
