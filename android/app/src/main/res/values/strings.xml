@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">HEXTEKO</string>
-    <string name="title_activity_main">HEXTEKO</string>
+    <string name="app_name">Tkhoi♡Mtue</string>
+    <string name="title_activity_main">Tkhoi♡Mtue</string>
     <string name="package_name">com.hexteko.chat</string>
     <string name="custom_url_scheme">com.hexteko.chat</string>
 </resources>
